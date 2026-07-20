@@ -2,3 +2,5 @@ flask
 ultralytics
 opencv-python
 werkzeug
+gunicorn
+opencv-python-headless
