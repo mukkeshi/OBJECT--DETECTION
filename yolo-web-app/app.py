@@ -1,7 +1,7 @@
+import os
+import cv2
 from flask import Flask, render_template, request, Response, jsonify
 from ultralytics import YOLO
-import cv2
-import os
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -22,11 +22,11 @@ def index():
 @app.route('/detect_image', methods=['POST'])
 def detect_image():
     if 'file' not in request.files:
-        return jsonify({'error': 'No file part'})
+        return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'error': 'No selected file'})
+        return jsonify({'error': 'No selected file'}), 400
 
     # Save uploaded file
     filename = secure_filename(file.filename)
@@ -38,12 +38,11 @@ def detect_image():
     results = model(img)[0]
     img_detected = results.plot()
 
-    # Save output image temporarily
+    # Save output image
     output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'output.jpg')
     cv2.imwrite(output_path, img_detected)
 
-    return jsonify({'success': True, 'message': 'Image processed. Refresh logic needed.'}) # Simplified response for now
-
+    return jsonify({'success': True, 'message': 'Image processed successfully!'})
 
 # ----------------- Video Processing Generator -----------------
 def generate_frames(video_path):
@@ -84,8 +83,10 @@ def upload_video():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
     
-    # Return the URL string so frontend knows what to stream
     return f"/video_feed/{filename}"
 
+# ----------------- Server Start Setup -----------------
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Render cloud dynamic PORT setting
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
