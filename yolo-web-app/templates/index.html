@@ -57,17 +57,23 @@
         let display = document.getElementById('displayResult');
 
         container.style.display = 'block';
-        status.innerText = "Processing Image...";
+        status.innerText = "Processing Image... Please wait...";
         display.src = "";
 
         try {
             let response = await fetch('/upload_image', { method: 'POST', body: formData });
-            if (response.ok) {
-                let imgUrl = await response.text();
+            let data = await response.json();
+            
+            if (response.ok && data.image_data) {
                 status.innerText = "Image Detection Completed!";
-                display.src = imgUrl;
-            } else { alert('Image process failed.'); }
-        } catch (err) { console.error(err); }
+                display.src = data.image_data; // Sets base64 image directly
+            } else { 
+                status.innerText = "Processing failed. Try another image.";
+            }
+        } catch (err) { 
+            console.error(err); 
+            status.innerText = "Error processing image!";
+        }
     };
 
     // Video Upload Script
