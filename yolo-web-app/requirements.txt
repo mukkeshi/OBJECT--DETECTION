@@ -1,4 +1,5 @@
-flask
+Flask
 ultralytics
 opencv-python-headless
 gunicorn
+Pillow
