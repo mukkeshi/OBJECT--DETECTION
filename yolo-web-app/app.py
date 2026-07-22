@@ -1,5 +1,6 @@
 import os
 import cv2
+import base64
 from flask import Flask, render_template, request, Response, jsonify
 from ultralytics import YOLO
 from werkzeug.utils import secure_filename
@@ -18,7 +19,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def index():
     return render_template('index.html')
 
-# ----------------- 📸 Image Detection Endpoint -----------------
+# ----------------- 📸 Fast Base64 Image Detection -----------------
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
     if 'image' not in request.files:
@@ -37,20 +38,11 @@ def upload_image():
     results = model(img)[0]
     annotated_img = results.plot()
 
-    # Save output image
-    output_filename = 'detected_' + filename
-    output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
-    cv2.imwrite(output_path, annotated_img)
+    # Convert processed image directly to Base64 (No file loading issues)
+    _, buffer = cv2.imencode('.jpg', annotated_img)
+    encoded_image = base64.b64encode(buffer).decode('utf-8')
 
-    return f"/uploads_file/{output_filename}"
-
-# Serve uploaded / processed files
-@app.route('/uploads_file/<filename>')
-def serve_file(filename):
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    if os.path.exists(file_path):
-        return Response(open(file_path, 'rb').read(), mimetype='image/jpeg')
-    return "File not found", 404
+    return jsonify({'image_data': f"data:image/jpeg;base64,{encoded_image}"})
 
 # ----------------- 🎥 Video Streaming Generator -----------------
 def generate_frames(video_path):
@@ -63,7 +55,6 @@ def generate_frames(video_path):
             break
 
         frame_count += 1
-        # Skip frames for fast cloud processing
         if frame_count % 2 != 0:
             continue
 
