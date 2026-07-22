@@ -3,92 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLOv8 Web Object Detection</title>
+    <title>YOLOv8 Detection Web App</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            background: #f4f4f9; 
-            padding: 20px; 
-        }
-        .container { 
-            max-width: 600px; 
-            margin: auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
-        }
+        body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f9; padding: 20px; }
+        .container { max-width: 650px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         h1 { color: #333; }
-        .btn { 
-            background: #007bff; 
-            color: white; 
-            padding: 10px 20px; 
-            border: none; 
-            cursor: pointer; 
-            border-radius: 5px; 
-            margin: 10px; 
-            font-size: 16px; 
-        }
+        .box { border: 2px dashed #007bff; padding: 15px; margin: 15px 0; border-radius: 8px; background: #fafafa; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; margin-top: 10px; font-size: 15px; }
         .btn:hover { background: #0056b3; }
-        #video-container { 
-            margin-top: 20px; 
-            display: none; 
-        }
-        img, video { 
-            max-width: 100%; 
-            border-radius: 10px; 
-            margin-top: 10px; 
-        }
+        #output-container { margin-top: 20px; display: none; }
+        img { max-width: 100%; border-radius: 10px; margin-top: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>YOLOv8 Web Detection</h1>
-    <p>Upload a video to see live object detection.</p>
+    <h1>🎯 YOLOv8 Object Detection</h1>
     
-    <form id="videoForm" enctype="multipart/form-data">
-        <input type="file" id="videoInput" name="video" accept="video/mp4, video/avi, video/mov" required><br><br>
-        <button type="submit" class="btn">Process Video</button>
-    </form>
+    <!-- Image Section -->
+    <div class="box">
+        <h3>📸 Upload Image</h3>
+        <form id="imageForm" enctype="multipart/form-data">
+            <input type="file" id="imageInput" name="image" accept="image/*" required><br>
+            <button type="submit" class="btn">Detect Objects in Image</button>
+        </form>
+    </div>
 
-    <div id="video-container">
-        <h3>Live Detection Stream</h3>
-        <!-- The img tag acts as the stream container -->
-        <img id="videoStream" src="" alt="Processing Video...">
+    <!-- Video Section -->
+    <div class="box">
+        <h3>🎥 Upload Video</h3>
+        <form id="videoForm" enctype="multipart/form-data">
+            <input type="file" id="videoInput" name="video" accept="video/mp4, video/avi, video/mov" required><br>
+            <button type="submit" class="btn">Process Video Stream</button>
+        </form>
+    </div>
+
+    <!-- Result Display Container -->
+    <div id="output-container">
+        <h3 id="statusText">Processing...</h3>
+        <img id="displayResult" src="" alt="Detection Output">
     </div>
 </div>
 
 <script>
-    document.getElementById('videoForm').onsubmit = async function(e) { 
-        e.preventDefault(); 
-        
-        let formData = new FormData(); 
-        formData.append('video', document.getElementById('videoInput').files[0]); 
-        
-        // Show video container
-        document.getElementById('video-container').style.display = 'block'; 
-        document.getElementById('videoStream').src = ''; 
-        document.getElementById('videoStream').alt = 'Uploading and processing...'; 
+    // Image Upload Script
+    document.getElementById('imageForm').onsubmit = async function(e) {
+        e.preventDefault();
+        let formData = new FormData();
+        formData.append('image', document.getElementById('imageInput').files[0]);
 
-        try { 
-            let response = await fetch('/upload_video', { 
-                method: 'POST', 
-                body: formData 
-            }); 
-            
-            if(response.ok) { 
-                // Get the feed URL from backend
-                let feedUrl = await response.text(); 
-                // Set img src to the streaming URL endpoint
-                document.getElementById('videoStream').src = feedUrl; 
-            } else { 
-                alert('Upload failed.'); 
-            } 
-        } catch (err) { 
-            console.error('Error:', err); 
-        } 
+        let container = document.getElementById('output-container');
+        let status = document.getElementById('statusText');
+        let display = document.getElementById('displayResult');
+
+        container.style.display = 'block';
+        status.innerText = "Processing Image...";
+        display.src = "";
+
+        try {
+            let response = await fetch('/upload_image', { method: 'POST', body: formData });
+            if (response.ok) {
+                let imgUrl = await response.text();
+                status.innerText = "Image Detection Completed!";
+                display.src = imgUrl;
+            } else { alert('Image process failed.'); }
+        } catch (err) { console.error(err); }
+    };
+
+    // Video Upload Script
+    document.getElementById('videoForm').onsubmit = async function(e) {
+        e.preventDefault();
+        let formData = new FormData();
+        formData.append('video', document.getElementById('videoInput').files[0]);
+
+        let container = document.getElementById('output-container');
+        let status = document.getElementById('statusText');
+        let display = document.getElementById('displayResult');
+
+        container.style.display = 'block';
+        status.innerText = "Live Video Detection Stream:";
+        display.src = "";
+
+        try {
+            let response = await fetch('/upload_video', { method: 'POST', body: formData });
+            if (response.ok) {
+                let feedUrl = await response.text();
+                display.src = feedUrl;
+            } else { alert('Video upload failed.'); }
+        } catch (err) { console.error(err); }
     };
 </script>
 
